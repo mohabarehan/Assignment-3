@@ -70,10 +70,11 @@ resnet_acc = resnet_correct / total
 print("Number of images:", total)            
 print("ViT Accuracy:", vit_acc)
 print("ResNet Accuracy:", resnet_acc)  
-## Results
+##Результаты
 #| Model  | Correct Predictions | Total Images | Accuracy |
 #|--------|---------------------|--------------|----------|
 #| ViT    | 29                  | 30           | 96.7%    |
 #| ResNet | 27                  | 30           | 90.0%    |
+
 
 
