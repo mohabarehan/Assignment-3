@@ -67,6 +67,13 @@ for filename in os.listdir(data_folder):
 vit_acc = vit_correct / total
 resnet_acc = resnet_correct / total
 
-print("Number of images:", total)
+print("Number of images:", total)            
 print("ViT Accuracy:", vit_acc)
-print("ResNet Accuracy:", resnet_acc)
+print("ResNet Accuracy:", resnet_acc)  
+## Results
+#| Model  | Correct Predictions | Total Images | Accuracy |
+#|--------|---------------------|--------------|----------|
+#| ViT    | 29                  | 30           | 96.7%    |
+#| ResNet | 27                  | 30           | 90.0%    |
+
+
