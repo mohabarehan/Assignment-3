@@ -3,12 +3,10 @@ from PIL import Image
 import torch
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from transformers import pipeline
-
-# === Load BLIP for image captioning ===
+#Load BLIP for image captioning
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-
-# === Load two different LLMs for comparison ===
+#Load two different LLMs for comparison
 llm1 = pipeline("text2text-generation", model="google/flan-t5-large")
 llm2 = pipeline("text2text-generation", model="google/flan-t5-base")
 
@@ -29,9 +27,8 @@ def classify_with_llm(caption, llm):
     elif "military" in text or "fighter" in text:
         return "military"
     else:
-        return "civil"  # default fallback
-
-# === Counters for each model ===
+        return "civil"  
+#Counters for each model
 llm1_civil = 0
 llm1_military = 0
 llm2_civil = 0
@@ -73,8 +70,7 @@ print("Civil:", llm2_civil)
 print("Military:", llm2_military)
 
 print("\nTotal images processed:", total)
-
-##Результаты
+##Результаты#
 #- Results from LLM1 -
 #Civil: 22
 #Military: 8
@@ -84,6 +80,7 @@ print("\nTotal images processed:", total)
 #Military: 16
 
 #Total images processed: 30
+
 
 
 
