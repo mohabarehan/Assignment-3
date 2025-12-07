@@ -1,50 +1,41 @@
 import os
 from PIL import Image
-from transformers import ViTForImageClassification, ViTImageProcessor
-from transformers import ResNetForImageClassification, AutoImageProcessor
 import torch
+from transformers import BlipProcessor, BlipForConditionalGeneration
+from transformers import pipeline
+
+# === Load BLIP for image captioning ===
+blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+
+# === Load two different LLMs for comparison ===
+llm1 = pipeline("text2text-generation", model="google/flan-t5-large")
+llm2 = pipeline("text2text-generation", model="google/flan-t5-base")
 
 data_folder = r"D:\planes_dataset"
 
-labels = ["civil", "military"]
+def describe_image(img):
+    inputs = blip_processor(images=img, return_tensors="pt")
+    out = blip_model.generate(**inputs)
+    caption = blip_processor.decode(out[0], skip_special_tokens=True)
+    return caption
 
-vit_model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224")
-vit_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-id2label_vit = vit_model.config.id2label
-
-resnet_model = ResNetForImageClassification.from_pretrained("microsoft/resnet-50")
-resnet_processor = AutoImageProcessor.from_pretrained("microsoft/resnet-50")
-id2label_resnet = resnet_model.config.id2label
-
-def map_label(original_label):
-    label_lower = original_label.lower()
-    if "warplane" in label_lower or "military" in label_lower or "fighter" in label_lower:
+def classify_with_llm(caption, llm):
+    prompt = f"Classify this aircraft strictly as 'civil' or 'military'. Description: {caption}"
+    result = llm(prompt, max_new_tokens=5, truncation=True)
+    text = result[0].get('generated_text', '').strip().lower()
+    if "civil" in text:
+        return "civil"
+    elif "military" in text or "fighter" in text:
         return "military"
-    elif "airliner" in label_lower or "civil" in label_lower or "passenger" in label_lower:
-        return "civil"
     else:
-        return "civil"
+        return "civil"  # default fallback
 
-def predict_vit(img):
-    inputs = vit_processor(images=img, return_tensors="pt")
-    with torch.no_grad():
-        outputs = vit_model(**inputs)
-        probs = outputs.logits.softmax(1)
-    pred_id = int(probs.argmax())
-    original_label = id2label_vit[pred_id]
-    return map_label(original_label)
-
-def predict_resnet(img):
-    inputs = resnet_processor(images=img, return_tensors="pt")
-    with torch.no_grad():
-        outputs = resnet_model(**inputs)
-        probs = outputs.logits.softmax(1)
-    pred_id = int(probs.argmax())
-    original_label = id2label_resnet[pred_id]
-    return map_label(original_label)
-
-vit_correct = 0
-resnet_correct = 0
+# === Counters for each model ===
+llm1_civil = 0
+llm1_military = 0
+llm2_civil = 0
+llm2_military = 0
 total = 0
 
 for filename in os.listdir(data_folder):
@@ -52,29 +43,47 @@ for filename in os.listdir(data_folder):
         img_path = os.path.join(data_folder, filename)
         img = Image.open(img_path).convert("RGB")
 
-        true_label = "military" if "military" in filename.lower() else "civil"
+        caption = describe_image(img)
+        pred1 = classify_with_llm(caption, llm1)
+        pred2 = classify_with_llm(caption, llm2)
 
-        vit_pred = predict_vit(img)
-        resnet_pred = predict_resnet(img)
+        # Update counters for LLM1
+        if pred1 == "civil":
+            llm1_civil += 1
+        else:
+            llm1_military += 1
 
-        if vit_pred == true_label:
-            vit_correct += 1
-        if resnet_pred == true_label:
-            resnet_correct += 1
+        # Update counters for LLM2
+        if pred2 == "civil":
+            llm2_civil += 1
+        else:
+            llm2_military += 1
 
         total += 1
 
-vit_acc = vit_correct / total
-resnet_acc = resnet_correct / total
+        print(f"{filename} | Caption: {caption} | LLM1: {pred1} | LLM2: {pred2}")
 
-print("Number of images:", total)            
-print("ViT Accuracy:", vit_acc)
-print("ResNet Accuracy:", resnet_acc)  
+# === Final results ===
+print("\n--- Results from LLM1 ---")
+print("Civil:", llm1_civil)
+print("Military:", llm1_military)
+
+print("\n--- Results from LLM2 ---")
+print("Civil:", llm2_civil)
+print("Military:", llm2_military)
+
+print("\nTotal images processed:", total)
+
 ##Результаты
-#| Model  | Correct Predictions | Total Images | Accuracy |
-#|--------|---------------------|--------------|----------|
-#| ViT    | 29                  | 30           | 96.7%    |
-#| ResNet | 27                  | 30           | 90.0%    |
+#- Results from LLM1 -
+#Civil: 22
+#Military: 8
+
+#- Results from LLM2 -
+#Civil: 14
+#Military: 16
+
+#Total images processed: 30
 
 
 
