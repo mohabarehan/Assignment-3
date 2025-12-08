@@ -4,16 +4,13 @@ from PIL import Image
 import torch
 from transformers import CLIPProcessor, CLIPModel
 
-# ===================== Set your dataset path here =====================
+#Set your dataset path here
 data_dir = r"d:\planes_dataset"  # ← main folder containing subfolders 0 and 1
-# ======================================================================
-
 path = Path(data_dir)
-
 if not path.exists():
     raise FileNotFoundError(f"Dataset directory '{data_dir}' not found.")
-
-# ==================== Load CLIP model ============================
+    
+# Load CLIP model
 device = "cuda" if torch.cuda.is_available() else "cpu"
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
@@ -68,7 +65,7 @@ for class_folder in ["0", "1"]:
         print(line)
         report_lines.append(line)
 
-# ===================== Final summary ======================
+#Final summary
 clip_accuracy = (correct_clip / total_images) * 100 if total_images > 0 else 0
 vit_accuracy = (correct_vit / total_images) * 100 if total_images > 0 else 0
 
@@ -134,6 +131,7 @@ print(f"\n📄 Classification report saved at: {report_path}")
 #CLIP Zero-Shot Accuracy: 30/30 = 100.00%
 #ViT ImageNet Accuracy:  30/30 = 100.00%
 #==========================
+
 
 
 
